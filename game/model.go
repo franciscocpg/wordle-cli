@@ -25,10 +25,35 @@ type AppModel struct {
 	CurrentColumn     int
 	GameType          common.GameType
 	GameState         common.GameState
+	WordState         common.WordState
 	SaveData          *save.SaveFile
 	NewGame           bool
 	DisplayStatistics bool
 }
+
+const dialogBoxWidth = 23
+
+var (
+	dialogBoxStyle = lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(lipgloss.Color("#ff0000")).
+			Width(dialogBoxWidth).
+			MarginLeft(1).
+			BorderTop(true).
+			BorderLeft(true).
+			BorderRight(true).
+			BorderBottom(true)
+
+	emptyBoxStyle = lipgloss.NewStyle().
+			Padding(2, 0)
+
+	buttonStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#FFF7DB")).
+			Background(lipgloss.Color("#888B7E")).
+			Padding(0, 3).
+			MarginTop(1).
+			Underline(true)
+)
 
 func NewGame(word string, gameType common.GameType, id int) *AppModel {
 	model := &AppModel{}
@@ -51,6 +76,7 @@ func NewGame(word string, gameType common.GameType, id int) *AppModel {
 	model.ID = id
 	model.GameType = gameType
 	model.GameState = common.GameStateRunning
+	model.WordState = common.WordStateOk
 	model.LetterStates = make(map[byte]common.LetterState, 26)
 	model.CurrentRow = 0
 	model.CurrentColumn = 0
@@ -108,8 +134,31 @@ func (m *AppModel) View() string {
 
 	trailing := lipgloss.NewStyle().Padding(2, 0).Render(m.renderTrailingBlock())
 
+	getMessageDialog := func() string {
+		switch m.WordState {
+		case common.WordStateNotEnoughLetters,
+			common.WordStateNotInList:
+			getMessage := func() string {
+				if m.WordState == common.WordStateNotInList {
+					return "Not in word list"
+				}
+
+				return "Not enough letters"
+			}
+
+			message := lipgloss.NewStyle().Width(dialogBoxWidth).Align(lipgloss.Center).Render(getMessage())
+			okButton := buttonStyle.Render("Ok")
+			buttons := lipgloss.JoinHorizontal(lipgloss.Top, okButton)
+			ui := lipgloss.JoinVertical(lipgloss.Center, message, buttons)
+
+			return dialogBoxStyle.Render(ui)
+		}
+
+		return emptyBoxStyle.String()
+	}
+
 	game := lipgloss.JoinHorizontal(lipgloss.Top, grid, keyboard)
-	return lipgloss.JoinVertical(lipgloss.Center, game, trailing)
+	return lipgloss.JoinVertical(lipgloss.Left, getMessageDialog(), game, trailing)
 }
 
 func (m *AppModel) handleKeyDown(t tea.KeyType, r []rune) (tea.Model, tea.Cmd) {

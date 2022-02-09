@@ -44,6 +44,10 @@ func (m *AppModel) quit() tea.Cmd {
 }
 
 func (m *AppModel) backspace() tea.Cmd {
+	if m.WordState != common.WordStateOk {
+		m.WordState = common.WordStateOk
+	}
+
 	if m.GameState != common.GameStateRunning {
 		return nil
 	}
@@ -77,7 +81,13 @@ func (m *AppModel) input(r rune) tea.Cmd {
 }
 
 func (m *AppModel) enter() tea.Cmd {
+	if m.WordState != common.WordStateOk {
+		m.WordState = common.WordStateOk
+		return nil
+	}
+
 	if m.CurrentColumn < common.WordleWordLength {
+		m.WordState = common.WordStateNotEnoughLetters
 		return nil
 	}
 
@@ -104,8 +114,10 @@ func (m *AppModel) enter() tea.Cmd {
 	}
 
 	if !ok {
+		m.WordState = common.WordStateNotInList
 		return nil
 	}
+	m.WordState = common.WordStateOk
 
 	word = strings.ToUpper(word)
 	targetWord := strings.ToUpper(string(m.Word[:]))

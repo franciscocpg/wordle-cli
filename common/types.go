@@ -62,6 +62,14 @@ const (
 	GameStateLost
 )
 
+type WordState int
+
+const (
+	WordStateOk WordState = iota
+	WordStateNotInList
+	WordStateNotEnoughLetters
+)
+
 func (gs GameState) GetMessage(attempts int) string {
 	switch gs {
 	case GameStateWon:
